@@ -33,6 +33,10 @@ public class Vector2d {
         if (o == null || getClass() != o.getClass()) return false;
         return x == ((Vector2d) o).x && y == ((Vector2d) o).y;
     }
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(x, y);
+    }
 
     public int distance(Vector2d vector) {
         // distance 5_10_5

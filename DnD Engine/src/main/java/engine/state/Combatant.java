@@ -1,5 +1,7 @@
 package engine.state;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 public class Combatant {
@@ -12,11 +14,15 @@ public class Combatant {
     private int tempHp = 0;
     private Vector2d position;
 
+    private int speed;
+    private int size;
+    private EnumSet<MovementTrait> movementTraits;
+
     private final List<Weapon> weapons;
     //List<Effect> effects;
 
 
-    public Combatant(String id, String name, String factionId, int maxHp, int armorClass, Vector2d position, List<Weapon> weapons) {
+    public Combatant(String id, String name, String factionId, int maxHp, int armorClass, Vector2d position, List<Weapon> weapons, int speed, int size, EnumSet<MovementTrait> movementTraits) {
         this.id = id;
         this.name = name;
         this.factionId = factionId;
@@ -25,6 +31,9 @@ public class Combatant {
         this.armorClass = armorClass;
         this.position = position;
         this.weapons = weapons;
+        this.speed = speed;
+        this.size = size;
+        this.movementTraits = movementTraits;
     }
 
     public String getId() {
@@ -53,6 +62,21 @@ public class Combatant {
     }
     public List<Weapon> getWeapons() {
         return weapons;
+    }
+    public int getSpeed() { return speed; }
+    public int getSize() { return size; }
+    public boolean hasTrait(MovementTrait trait) {
+        return movementTraits.contains(trait);
+    }
+
+    public List<Vector2d> getOccupiedTiles() {
+        List<Vector2d> tiles = new ArrayList<>();
+        for (int dx = 0; dx < size; dx++) {
+            for (int dy = 0; dy < size; dy++) {
+                tiles.add(new Vector2d(position.getX() + dx, position.getY() + dy));
+            }
+        }
+        return tiles;
     }
 
     public void setId(String id) {
