@@ -1,5 +1,9 @@
 package engine;
 
+import ai.decider.AggressiveDecider;
+import ai.decider.IDecider;
+import ai.movement.AStarPathfinder;
+import engine.actions.ActionDefinition;
 import engine.core.*;
 import engine.events.ConsoleLogger;
 import engine.state.*;
@@ -12,10 +16,20 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
 
+        IDecider decider = new AggressiveDecider(new AStarPathfinder());
         EnumSet<MovementTrait> normalMovement = EnumSet.of(MovementTrait.NORMAL);
-        Combatant goblin1 = new Combatant("g1", "Goblin A", "monsters", 3, 15, new Vector2d(0, 0), new ArrayList<>(), 6, 1, normalMovement);
-        Combatant goblin2 = new Combatant("g2", "Goblin B", "monsters", 3, 15, new Vector2d(0, 1), new ArrayList<>(), 6, 1, normalMovement);
-        Combatant hero = new Combatant("h1", "Hero", "player", 15, 16, new Vector2d(5, 5), new ArrayList<>(), 6, 1, normalMovement);
+        List<ActionDefinition> goblinActions = List.of(new ActionDefinition("Dagger", 1, +4, List.of(new DamageComponent("1d4+2", DamageType.PIERCING))));
+        List<ActionDefinition> guardActions = List.of(new ActionDefinition("Spear", 2, +3, List.of(new DamageComponent("1d6+1", DamageType.PIERCING))));
+
+        Combatant goblin1 = new Combatant(
+                "g1", "Goblin A", "monsters", 7, 12, new Vector2d(0, 0), goblinActions, 6, 1, normalMovement, decider
+        );
+        Combatant goblin2 = new Combatant(
+                "g2", "Goblin B", "monsters", 7, 12, new Vector2d(0, 1), goblinActions, 6, 1, normalMovement, decider
+        );
+        Combatant hero = new Combatant(
+                "h1", "Hero", "player", 11, 16, new Vector2d(5, 5), guardActions, 6, 1, normalMovement, decider
+        );
 
         List<Combatant> initiative = Arrays.asList(hero, goblin1, goblin2);
 
@@ -30,10 +44,9 @@ public class Main {
 
         ConsoleLogger logger = new ConsoleLogger();
         IDiceRoller diceRoller = new StandardDiceRoller();
-        CombatResolver resolver = new CombatResolver(diceRoller);
-        IPathfinder pathfinder = new AStarPathfinder();
+        AttackResolver resolver = new AttackResolver(diceRoller);
 
-        GameEngine engine = new GameEngine(state, logger, resolver, pathfinder);
+        GameEngine engine = new GameEngine(state, logger, resolver);
 
         engine.run();
     }

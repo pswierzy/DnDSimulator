@@ -1,4 +1,4 @@
-package engine.core;
+package ai.movement;
 
 import engine.state.Combatant;
 import engine.state.GameState;

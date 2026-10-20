@@ -52,4 +52,10 @@ public class StandardDiceRoller implements IDiceRoller {
 
         return total;
     }
+
+    @Override
+    public int rollDice(int count, int faces, int bonus) {
+        if (faces <= 0) return 0;
+        return random.nextInt(faces) + 1 + bonus;
+    }
 }

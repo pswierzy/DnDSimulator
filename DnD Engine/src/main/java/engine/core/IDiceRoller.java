@@ -3,4 +3,5 @@ package engine.core;
 public interface IDiceRoller {
     int roll(int faces);
     int parseRoll(String rolls);
+    int rollDice(int count, int faces, int bonus);
 }

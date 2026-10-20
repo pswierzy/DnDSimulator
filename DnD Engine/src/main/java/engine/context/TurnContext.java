@@ -1,19 +1,30 @@
 package engine.context;
 
-import engine.core.CombatResolver;
+import engine.core.AttackResolver;
 import engine.events.ICombatLogger;
 import engine.state.GameState;
 
 public class TurnContext {
     private final GameState gameState;
     private final ICombatLogger combatLogger;
-    private final CombatResolver combatResolver;
+    private final AttackResolver attackResolver;
 
-    public TurnContext(GameState gameState, ICombatLogger combatLogger, CombatResolver combatResolver) {
+    private boolean actionUsed = false;
+    private boolean bonusActionUsed = false;
+    private int movementRemaining;
+
+    public TurnContext(GameState gameState, ICombatLogger combatLogger, AttackResolver attackResolver, int initialMovement) {
         this.gameState = gameState;
         this.combatLogger = combatLogger;
-        this.combatResolver = combatResolver;
+        this.attackResolver = attackResolver;
+        this.movementRemaining = initialMovement;
     }
+
+    public boolean hasAction() { return !actionUsed; }
+    public void consumeAction() { this.actionUsed = true; }
+
+    public int getMovementRemaining() { return movementRemaining; }
+    public void consumeMovement(int cost) { this.movementRemaining -= cost; }
 
     public GameState getGameState() {
         return gameState;
@@ -21,7 +32,7 @@ public class TurnContext {
     public ICombatLogger getCombatLogger() {
         return combatLogger;
     }
-    public CombatResolver getCombatResolver() {
-        return combatResolver;
+    public AttackResolver getCombatResolver() {
+        return attackResolver;
     }
 }

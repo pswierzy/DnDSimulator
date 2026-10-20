@@ -23,7 +23,7 @@ public class MoveAction implements IAction {
 
     @Override
     public void execute(TurnContext turnContext) {
-        int speedInSquares = entity.getSpeed();
+        int speedInSquares = turnContext.getMovementRemaining();
         int currentCost = 0;
         int diagonalsTraversed = 0;
 
@@ -52,7 +52,14 @@ public class MoveAction implements IAction {
         }
 
         if (!finalDestination.equals(entity.getPosition())) {
-            entity.setPosition(finalDestination);
+
+            for (Vector2d step : path) {
+                entity.setPosition(step);
+                turnContext.consumeMovement(1);
+
+                // new place checks / opportunity attacks
+            }
+
             int finalCostFt = currentCost * 5;
 
             turnContext.getCombatLogger().log(new SimpleEvent(
