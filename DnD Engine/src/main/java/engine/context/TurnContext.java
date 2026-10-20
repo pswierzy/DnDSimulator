@@ -23,6 +23,9 @@ public class TurnContext {
     public boolean hasAction() { return !actionUsed; }
     public void consumeAction() { this.actionUsed = true; }
 
+    public boolean hasBonusAction() { return !bonusActionUsed; }
+    public void consumeBonusAction() { this.bonusActionUsed = true; }
+
     public int getMovementRemaining() { return movementRemaining; }
     public void consumeMovement(int cost) { this.movementRemaining -= cost; }
 

@@ -2,53 +2,55 @@ package engine.actions;
 
 import engine.context.TurnContext;
 import engine.state.Combatant;
-import engine.state.DamageComponent;
 import engine.state.Vector2d;
-
-import java.util.List;
 
 public class AttackAction implements IAction {
     private final Combatant attacker;
-    private final Combatant target;
-    private final String actionName;
-    private final int range;
-    private final int toHitBonus;
-    private final List<DamageComponent> damageComponents;
+    private final Vector2d targetTile;
+    private final AttackDefinition definition;
 
-    public AttackAction(Combatant attacker, Combatant target, String actionName, int range, int toHitBonus, List<DamageComponent> damageComponents) {
+    public AttackAction(Combatant attacker, Vector2d targetTile, AttackDefinition definition) {
         this.attacker = attacker;
-        this.target = target;
-        this.actionName = actionName;
-        this.range = range;
-        this.toHitBonus = toHitBonus;
-        this.damageComponents = damageComponents;
-    }
-
-    public int getRange() {
-        return range;
+        this.targetTile = targetTile;
+        this.definition = definition;
     }
 
     @Override
     public boolean canExecute(TurnContext turnContext) {
-        return attacker.getHp() > 0
-                && target.getHp() > 0
-                && turnContext.hasAction()
-                && isInRange();
+        if (attacker.getHp() <= 0 || !isInRange()) {
+            return false;
+        }
+        Combatant target = turnContext.getGameState().getAliveCombatantAt(targetTile);
+        if (target == null) {
+            return false; // Na tym kafelku nie ma żywego celu
+        }
+        return switch (definition.cost()) {
+            case ACTION -> turnContext.hasAction();
+            case BONUS_ACTION -> turnContext.hasBonusAction();
+            case REACTION -> attacker.hasReaction();
+        };
     }
 
     @Override
     public void execute(TurnContext turnContext) {
-        turnContext.consumeAction();
+        Combatant target = turnContext.getGameState().getAliveCombatantAt(targetTile);
+        if (target == null) return;
 
-        turnContext.getCombatResolver().resolveAttack(attacker, target, actionName, toHitBonus, damageComponents, turnContext.getCombatLogger());
+        switch (definition.cost()) {
+            case ACTION -> turnContext.consumeAction();
+            case BONUS_ACTION -> turnContext.consumeBonusAction();
+            case REACTION -> attacker.useReaction();
+        }
+
+        turnContext.getCombatResolver().resolveAttack(
+                attacker, target, definition, turnContext.getCombatLogger()
+        );
     }
 
     private boolean isInRange() {
-        for (Vector2d targetTile : target.getOccupiedTiles()) {
-            for (Vector2d attackerTile : attacker.getOccupiedTiles()) {
-                if (attackerTile.distance(targetTile) <= range) {
-                    return true;
-                }
+        for (Vector2d attackerTile : attacker.getOccupiedTiles()) {
+            if (attackerTile.distance(targetTile) <= definition.range()) {
+                return true;
             }
         }
         return false;

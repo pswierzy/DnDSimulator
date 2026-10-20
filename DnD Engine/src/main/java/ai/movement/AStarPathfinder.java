@@ -78,7 +78,7 @@ public class AStarPathfinder implements IPathfinder {
                 Node neighborNode = allNodes.get(neighborPos);
 
                 if (neighborNode == null || gCost < neighborNode.gCost) {
-                    int hCost = neighborPos.distance(curr.position) * 10;
+                    int hCost = neighborPos.distance(destination) * 10;
                     Node nextNode = new Node(neighborPos, curr, gCost, hCost);
 
                     if (neighborNode != null) {

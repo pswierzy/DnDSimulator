@@ -5,6 +5,7 @@ import engine.events.SimpleEvent;
 import engine.state.Combatant;
 import engine.state.Vector2d;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MoveAction implements IAction {
@@ -23,12 +24,13 @@ public class MoveAction implements IAction {
 
     @Override
     public void execute(TurnContext turnContext) {
-        int speedInSquares = turnContext.getMovementRemaining();
         int currentCost = 0;
         int diagonalsTraversed = 0;
 
-        Vector2d currentPos = entity.getPosition();
-        Vector2d finalDestination = currentPos;
+        Vector2d startPos = entity.getPosition();
+        Vector2d currentPos = startPos;
+
+        List<Vector2d> stepsTaken = new ArrayList<>();
 
         for (Vector2d step : path) {
             int dx = Math.abs(step.getX() - currentPos.getX());
@@ -42,29 +44,25 @@ public class MoveAction implements IAction {
                 stepCost = 1;
             }
 
-            if (currentCost + stepCost > speedInSquares) {
+            if (stepCost > turnContext.getMovementRemaining()) {
                 break;
             }
 
+            entity.setPosition(step);
+            turnContext.consumeMovement(stepCost);
             currentCost += stepCost;
             currentPos = step;
-            finalDestination = step;
+            stepsTaken.add(step);
+
+            // TODO - opportunity attacks
         }
 
-        if (!finalDestination.equals(entity.getPosition())) {
-
-            for (Vector2d step : path) {
-                entity.setPosition(step);
-                turnContext.consumeMovement(1);
-
-                // new place checks / opportunity attacks
-            }
-
+        if (!currentPos.equals(startPos)) {
             int finalCostFt = currentCost * 5;
 
             turnContext.getCombatLogger().log(new SimpleEvent(
-                    entity.getName() + " moves to " + finalDestination +
-                            " using " + finalCostFt + "ft of movement. " + path
+                    entity.getName() + " moves to " + currentPos +
+                            " using " + finalCostFt + "ft of movement. " + stepsTaken
             ));
         }
     }

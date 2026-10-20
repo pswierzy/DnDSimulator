@@ -33,6 +33,7 @@ public class GameEngine {
         if (curr.getHp() <= 0) {
             return true;
         }
+        curr.resetReaction();
 
         TurnContext context = new TurnContext(state, logger, resolver, curr.getSpeed());
 

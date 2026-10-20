@@ -31,6 +31,28 @@ public class GameState {
         return initiativeList;
     }
 
+    public Combatant getAliveCombatantAt(Vector2d position) {
+        for (Combatant combatant : initiativeList) {
+            if (combatant.getHp() > 0 && combatant.getOccupiedTiles().contains(position)) {
+                return combatant;
+            }
+        }
+        return null;
+    }
+    public List<Combatant> getAliveCombatantsInRadius(Vector2d centre, int radius) {
+        List<Combatant> result = new ArrayList<>();
+        for (Combatant c : initiativeList) {
+            if (c.getHp() <= 0) continue;
+            for (Vector2d occupied : c.getOccupiedTiles()) {
+                if (centre.distance(occupied) <= radius) {
+                    result.add(c);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public int getCurrRound() {
         return currRound;
     }
