@@ -9,6 +9,7 @@ import engine.actions.IActionDefinition;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 public class Combatant {
     private String id;
@@ -29,8 +30,12 @@ public class Combatant {
 
     private boolean hasReaction = true;
 
+    private final Map<Ability, Integer> abilityModifiers;
+    private final Map<Ability, Integer> saveBonuses;
 
-    public Combatant(String id, String name, String factionId, int maxHp, int armorClass, Vector2d position, List<IActionDefinition> availableActions, int speed, int size, EnumSet<MovementTrait> movementTraits, IDecider decider) {
+    // Spell ATK bonus / spell save DC
+
+    public Combatant(String id, String name, String factionId, int maxHp, int armorClass, Vector2d position, List<IActionDefinition> availableActions, int speed, int size, EnumSet<MovementTrait> movementTraits, IDecider decider, Map<Ability, Integer> abilityModifiers, Map<Ability, Integer> saveBonuses) {
         this.id = id;
         this.name = name;
         this.factionId = factionId;
@@ -43,6 +48,8 @@ public class Combatant {
         this.size = size;
         this.movementTraits = movementTraits;
         this.decider = decider;
+        this.abilityModifiers = abilityModifiers;
+        this.saveBonuses = saveBonuses;
     }
 
     public String getId() {
@@ -82,6 +89,12 @@ public class Combatant {
     }
     public boolean hasReaction() {
         return hasReaction;
+    }
+    public int getAbilityModifier(Ability ability) {
+        return abilityModifiers.get(ability);
+    }
+    public int getSaveBonus(Ability ability) {
+        return saveBonuses.get(ability);
     }
 
     public List<Vector2d> getOccupiedTiles() {

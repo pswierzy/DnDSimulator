@@ -9,13 +9,8 @@ public interface IActionDefinition {
     ActionCost cost();
     int range();
 
-    default int aoeRadius() {
-        return 0;
-    }
-
-    default boolean hasCloseCombatDisadvantage() {
-        return false;
-    }
+    default AreaOfEffect aoe() { return new AreaOfEffect(AreaShape.SINGLE_TARGET, 0, 0); }
+    default boolean hasCloseCombatDisadvantage() { return false; }
 
     double calculateBaseExpectedValue();
     IAction createAction(Combatant performer, Vector2d targetTile);
