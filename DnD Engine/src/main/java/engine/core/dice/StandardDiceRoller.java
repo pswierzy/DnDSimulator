@@ -1,4 +1,4 @@
-package engine.core;
+package engine.core.dice;
 
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -55,7 +55,10 @@ public class StandardDiceRoller implements IDiceRoller {
 
     @Override
     public int rollDice(int count, int faces, int bonus) {
+        int sum = 0;
         if (faces <= 0) return 0;
-        return random.nextInt(faces) + 1 + bonus;
+        for (int i = 0; i < count; i++) sum += roll(faces);
+
+        return sum + bonus;
     }
 }

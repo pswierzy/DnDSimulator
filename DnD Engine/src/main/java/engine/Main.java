@@ -5,6 +5,8 @@ import ai.decider.IDecider;
 import ai.movement.AStarPathfinder;
 import engine.actions.*;
 import engine.core.*;
+import engine.core.dice.IDiceRoller;
+import engine.core.dice.StandardDiceRoller;
 import engine.events.ConsoleLogger;
 import engine.state.*;
 
@@ -48,7 +50,7 @@ public class Main {
         );
         Combatant hero = new Combatant(
                 "h1", "Guard", "player", 16, 17,
-                new Vector2d(10, 10), guardActions, 6, 1, normalMovement, decider,
+                new Vector2d(9, 9), guardActions, 6, 1, normalMovement, decider,
                 guardStats, guardStats
         );
 

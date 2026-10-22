@@ -2,6 +2,7 @@ package engine.core;
 
 import engine.actions.AttackDefinition;
 import engine.actions.SaveActionDefinition;
+import engine.core.dice.IDiceRoller;
 import engine.events.ICombatLogger;
 import engine.state.Combatant;
 import engine.state.DamageComponent;

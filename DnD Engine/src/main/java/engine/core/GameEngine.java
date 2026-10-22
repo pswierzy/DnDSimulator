@@ -19,9 +19,9 @@ public class GameEngine {
     }
 
     public void run() {
-        logger.log(() -> "=== START SYMULACJI ===");
+        logger.log(() -> "=== SIMULATION START ===");
         while (runSingleTurn()) {}
-        logger.log(() -> "=== END SYMULACJI ===");
+        logger.log(() -> "=== SIMULATION END ===");
     }
 
     public boolean runSingleTurn() {

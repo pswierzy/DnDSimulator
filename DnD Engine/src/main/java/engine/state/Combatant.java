@@ -123,9 +123,15 @@ public class Combatant {
     public void setFactionId(String factionId) {
         this.factionId = factionId;
     }
-    public int takeDamage(int damage, DamageType damageType) {
-        this.hp -= damage;
-        return damage;
+    public void takeDamage(int damage, DamageType damageType) {
+        if (damage <= 0) return;
+        int remainingDamage = damage;
+        if (tempHp > 0) {
+            int absorbed = Math.min(tempHp, remainingDamage);
+            this.tempHp -= absorbed;
+            remainingDamage -= absorbed;
+        }
+        this.hp = Math.max(0, this.hp - remainingDamage);
     }
     public void heal(int value) {
         this.hp = Math.min(this.hp + value, this.maxHp);

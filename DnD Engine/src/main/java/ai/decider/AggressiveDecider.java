@@ -259,8 +259,10 @@ public class AggressiveDecider implements IDecider {
     private boolean isEnemyInMeleeReach(Combatant attacker, Vector2d attackerPos, GameState state) {
         for (Combatant other : state.getAllCombatants()) {
             if (other.getHp() > 0 && !other.getFactionId().equals(attacker.getFactionId())) {
-                if (isTileInRange(attacker.getPosition(), other.getSize(), attackerPos, other.getSize())) {
-                    return true;
+                for (Vector2d enemyTile : other.getOccupiedTiles()) {
+                    if (isTileInRange(attackerPos, attacker.getSize(), enemyTile, 1)) {
+                        return true;
+                    }
                 }
             }
         }

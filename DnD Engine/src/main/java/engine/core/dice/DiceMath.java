@@ -1,4 +1,4 @@
-package engine.core;
+package engine.core.dice;
 
 import engine.state.DamageComponent;
 

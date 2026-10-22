@@ -1,6 +1,6 @@
 package engine.actions;
 
-import engine.core.DiceMath;
+import engine.core.dice.DiceMath;
 import engine.state.Ability;
 import engine.state.Combatant;
 import engine.state.DamageComponent;

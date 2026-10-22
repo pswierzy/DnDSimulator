@@ -1,4 +1,4 @@
-package engine.core;
+package engine.core.dice;
 
 public interface IDiceRoller {
     int roll(int faces);
