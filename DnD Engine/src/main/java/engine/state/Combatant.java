@@ -52,50 +52,23 @@ public class Combatant {
         this.saveBonuses = saveBonuses;
     }
 
-    public String getId() {
-        return id;
-    }
-    public String getName() {
-        return name;
-    }
-    public String getFactionId() {
-        return factionId;
-    }
-    public int getHp() {
-        return hp;
-    }
-    public int getMaxHp() {
-        return maxHp;
-    }
-    public int getArmorClass() {
-        return armorClass;
-    }
-    public int getTempHp() {
-        return tempHp;
-    }
-    public Vector2d getPosition() {
-        return position;
-    }
-    public List<IActionDefinition> getAvailableActions() {
-        return availableActions;
-    }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getFactionId() { return factionId; }
+    public boolean isEnemy(Combatant other) { return !other.getFactionId().equals(this.factionId); }
+    public int getHp() { return hp; }
+    public int getMaxHp() { return maxHp; }
+    public int getArmorClass() { return armorClass; }
+    public int getTempHp() { return tempHp; }
+    public Vector2d getPosition() { return position; }
+    public List<IActionDefinition> getAvailableActions() { return availableActions; }
     public int getSpeed() { return speed; }
     public int getSize() { return size; }
-    public boolean hasTrait(MovementTrait trait) {
-        return movementTraits.contains(trait);
-    }
-    public IDecider getDecider() {
-        return decider;
-    }
-    public boolean hasReaction() {
-        return hasReaction;
-    }
-    public int getAbilityModifier(Ability ability) {
-        return abilityModifiers.getOrDefault(ability, 0);
-    }
-    public int getSaveBonus(Ability ability) {
-        return saveBonuses.getOrDefault(ability, 0);
-    }
+    public boolean hasTrait(MovementTrait trait) { return movementTraits.contains(trait); }
+    public IDecider getDecider() { return decider; }
+    public boolean hasReaction() { return hasReaction; }
+    public int getAbilityModifier(Ability ability) { return abilityModifiers.getOrDefault(ability, 0); }
+    public int getSaveBonus(Ability ability) { return saveBonuses.getOrDefault(ability, 0); }
 
     public List<Vector2d> getOccupiedTiles() {
         List<Vector2d> tiles = new ArrayList<>();
@@ -106,16 +79,14 @@ public class Combatant {
         }
         return tiles;
     }
+    public boolean occupiesTile(Vector2d tile) {
+        return tile.x() >= position.x() && tile.x() < position.x() + size
+                && tile.y() >= position.y() && tile.y() < position.y() + size;
+    }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-    public void setFactionId(String factionId) {
-        this.factionId = factionId;
-    }
+    public void setId(String id) { this.id = id; }
+    public void setName(String name) { this.name = name; }
+    public void setFactionId(String factionId) { this.factionId = factionId; }
     public void takeDamage(int damage, DamageType damageType) {
         if (damage <= 0) return;
         int remainingDamage = damage;
@@ -126,28 +97,12 @@ public class Combatant {
         }
         this.hp = Math.max(0, this.hp - remainingDamage);
     }
-    public void heal(int value) {
-        this.hp = Math.min(this.hp + value, this.maxHp);
-    }
-    public void setMaxHp(int maxHp) {
-        this.maxHp = maxHp;
-    }
-    public void setArmorClass(int armorClass) {
-        this.armorClass = armorClass;
-    }
-    public void setTempHp(int tempHp) {
-        this.tempHp = Math.max(tempHp, this.tempHp);
-    }
-    public void setPosition(Vector2d position) {
-        this.position = position;
-    }
-    public void setDecider(IDecider decider) {
-        this.decider = decider;
-    }
-    public void useReaction() {
-        this.hasReaction = false;
-    }
-    public void resetReaction() {
-        this.hasReaction = true;
-    }
+    public void heal(int value) { this.hp = Math.min(this.hp + value, this.maxHp); }
+    public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
+    public void setArmorClass(int armorClass) { this.armorClass = armorClass; }
+    public void setTempHp(int tempHp) { this.tempHp = Math.max(tempHp, this.tempHp); }
+    public void setPosition(Vector2d position) { this.position = position; }
+    public void setDecider(IDecider decider) { this.decider = decider; }
+    public void useReaction() { this.hasReaction = false; }
+    public void resetReaction() { this.hasReaction = true; }
 }

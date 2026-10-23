@@ -36,6 +36,13 @@ public class GameState {
     public List<Combatant> getAllCombatants() {
         return initiativeList;
     }
+    public List<Combatant> getAllEnemyCombatants(Combatant combatant) {
+        List<Combatant> enemies = new ArrayList<>();
+        for (Combatant c : initiativeList) {
+            if (combatant.isEnemy(c)) enemies.add(c);
+        }
+        return enemies;
+    }
 
     public Combatant getAliveCombatantAt(Vector2d position) {
         for (Combatant combatant : initiativeList) {
@@ -57,6 +64,17 @@ public class GameState {
             }
         }
         return result;
+    }
+
+    public boolean hasEnemyInMeleeReach(Combatant combatant) { return hasEnemyInMeleeReach(combatant, combatant.getPosition()); }
+    public boolean hasEnemyInMeleeReach(Combatant combatant, Vector2d position) {
+        for (Combatant other : getAllEnemyCombatants(combatant)) {
+            if (other.getHp() > 0) {
+                if (getGeometry().areWithinRange(position, combatant.getSize(), other.getPosition(), other.getSize(), 1))
+                    return true;
+            }
+        }
+        return false;
     }
 
     public int getCurrRound() {

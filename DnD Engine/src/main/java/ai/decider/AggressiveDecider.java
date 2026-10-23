@@ -33,7 +33,7 @@ public class AggressiveDecider implements IDecider {
     public IAction decideNextAction(Combatant combatant, TurnContext turnContext) {
         GameState state = turnContext.getGameState();
 
-        List<Combatant> enemies = getLivingEnemies(combatant, state);
+        List<Combatant> enemies = state.getAllEnemyCombatants(combatant);
         if (enemies.isEmpty()) { return null; }
 
         // PHASE 1: Looking for the best action THIS TURN
@@ -158,14 +158,14 @@ public class AggressiveDecider implements IDecider {
         double baseValue = action.calculateBaseExpectedValue();
 
         // TODO - advantage and disadvantage calculations
-        if (action.hasCloseCombatDisadvantage() && isEnemyInMeleeReach(attacker, castFromPos, state)) {
+        if (action.hasCloseCombatDisadvantage() && state.hasEnemyInMeleeReach(attacker)) {
             baseValue *= DISADVANTAGE_PENALTY;
         }
 
         // Not AoE => expected damage
         if (action.aoe() == null || action.aoe().length() == 0) {
             Combatant target = state.getAliveCombatantAt(targetTile);
-            if (target == null || target.getFactionId().equals(attacker.getFactionId())) {
+            if (target == null || !target.isEnemy(attacker)) {
                 return -1.0;
             }
             return baseValue;
@@ -186,7 +186,7 @@ public class AggressiveDecider implements IDecider {
 
             if (c != null && !hitCombatants.contains(c)) {
                 hitCombatants.add(c);
-                if (!c.getFactionId().equals(attacker.getFactionId())) {
+                if (c.isEnemy(attacker)) {
                     totalScore += baseValue;
                     enemiesHit++;
                 } else {
@@ -223,7 +223,7 @@ public class AggressiveDecider implements IDecider {
                     int cost = state.getGeometry().getMetric().calculatePathCost(
                             attacker.getPosition(), path, turnContext.getDiagonalsTraversed()
                     );
-                    if (action.hasCloseCombatDisadvantage() && isEnemyInMeleeReach(attacker, checkPos, state)) {
+                    if (action.hasCloseCombatDisadvantage() && state.hasEnemyInMeleeReach(attacker, checkPos)) {
                         cost += 100;
                     }
                     if (cost < minCost) {
@@ -246,28 +246,5 @@ public class AggressiveDecider implements IDecider {
             }
         }
         return result;
-    }
-
-    private boolean isEnemyInMeleeReach(Combatant attacker, Vector2d attackerPos, GameState state) {
-        for (Combatant other : state.getAllCombatants()) {
-            if (other.getHp() > 0 && !other.getFactionId().equals(attacker.getFactionId())) {
-                for (Vector2d enemyTile : other.getOccupiedTiles()) {
-                    if (state.getGeometry().isInRange(attackerPos, attacker.getSize(), enemyTile, 1)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private List<Combatant> getLivingEnemies(Combatant attacker, GameState state) {
-        List<Combatant> enemies = new ArrayList<>();
-        for (Combatant c : state.getAllCombatants()) {
-            if (c.getHp() > 0 && !c.getFactionId().equals(attacker.getFactionId())) {
-                enemies.add(c);
-            }
-        }
-        return enemies;
     }
 }

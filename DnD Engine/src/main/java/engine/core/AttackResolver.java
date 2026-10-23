@@ -2,9 +2,8 @@ package engine.core;
 
 import engine.actions.SaveActionDefinition;
 import engine.context.AttackContext;
-import engine.core.dice.advantage.AdvantageRule;
+import engine.context.SaveContext;
 import engine.core.dice.advantage.AdvantageState;
-import engine.core.dice.advantage.IAdvantageStrategy;
 import engine.core.dice.IDiceRoller;
 import engine.core.dice.StandardDiceRoller;
 import engine.events.ICombatLogger;
@@ -41,7 +40,7 @@ public class AttackResolver {
 
         // 1. Ranged attacks have disadvantage if there is an enemy within 5ft
         if (context.getDefinition().hasCloseCombatDisadvantage()
-                && isEnemyInMeleeReach(attacker, context.getGameState())) {
+                && context.getGameState().hasEnemyInMeleeReach(attacker)) {
             context.addDisadvantage();
         }
 
@@ -52,6 +51,8 @@ public class AttackResolver {
                 context.getAdvantageCount(),
                 context.getDisadvantageCount()
         );
+        context.setAdvantageState(advState);
+
         int natRoll = diceRoller.roll(20, advState);
         int totalRoll = natRoll + context.getBonusToHit();
 
@@ -93,7 +94,7 @@ public class AttackResolver {
         }
 
         String hitLabel = context.isHit() ? (context.isCrit() ? "CRITICALLY hits" : "hits") : (context.getNaturalRoll() == 1 ? "critically misses" : "misses");
-        String advLabel = switch (advState) {
+        String advLabel = switch (context.getAdvantageState()) {
             case STRAIGHT -> "";
             case ADVANTAGE -> " (with advantage)";
             case DISADVANTAGE -> " (with disadvantage)";
@@ -105,62 +106,58 @@ public class AttackResolver {
         // TODO - afterAttackAgainst Hooks
     }
 
-    // TODO with advantages and disadvantages
-    public void resolveSavingThrow(Combatant performer, Combatant target, SaveActionDefinition definition,
-                                   List<RolledDamage> baseDamage, ICombatLogger logger) {
+    public void resolveSavingThrow(SaveContext context, ICombatLogger logger) {
+        Combatant target = context.getTarget();
+        SaveActionDefinition definition = context.getDefinition();
 
-        int naturalRoll = diceRoller.roll(20);
-        int saveBonus = target.getSaveBonus(definition.saveAbility());
-        int totalSave = naturalRoll + saveBonus;
-        boolean success = (totalSave >= definition.saveDc());
+        // TODO - onBeforeMakingEnemyMakeSave / onBeforeSave Hooks
 
-        int totalDamageDealt = 0;
+        // 1. Advantage / Disadvantage / Straight d20 - save checking
+        AdvantageState advState = diceRoller.getAdvantageState(
+                context.getAdvantageCount(),
+                context.getDisadvantageCount()
+        );
+        context.setAdvantageState(advState);
 
-        for (RolledDamage rd : baseDamage) {
+        if (context.isAutoFail()) {
+            context.setSuccess(false);
+        } else if (context.isAutoSuccess()) {
+            context.setSuccess(true);
+        } else {
+            int naturalRoll = diceRoller.roll(20, advState);
+            int totalSave = naturalRoll + context.getSaveBonus();
+            context.setNaturalRoll(naturalRoll);
+            context.setTotalRoll(totalSave);
+            context.setSuccess(totalSave >= definition.saveDc());
+        }
+
+        List<RolledDamage> appliedDamages = new ArrayList<>();
+        for (RolledDamage rd : context.getBaseDamages()) {
             int finalDamage = rd.amount();
-
-            if (success) {
-                if (definition.halfDamageOnSuccess()) {
-                    finalDamage = Math.floorDiv(finalDamage, 2);
-                } else {
-                    finalDamage = 0;
-                }
+            if (context.isSuccess()) {
+                finalDamage = definition.halfDamageOnSuccess() ? Math.floorDiv(finalDamage, 2) : 0;
+                // TODO - afterSuccessfulSave Hooks
+            } else {
+                // TODO - afterUnsuccessfulSave Hooks
             }
-
             if (finalDamage > 0) {
                 target.takeDamage(finalDamage, rd.damageType());
-                totalDamageDealt += finalDamage;
+                appliedDamages.add(new RolledDamage(finalDamage, rd.damageType()));
             }
         }
+        context.setFinalDamages(appliedDamages);
 
-        int dmgForLog = totalDamageDealt;
-        if (success) {
-            if (definition.halfDamageOnSuccess()) {
-                logger.log(() -> target.getName() + " SUCCEEDS on " + definition.saveAbility() +
-                        " save [" + totalSave + " vs DC " + definition.saveDc() +
-                        "] and takes half damage (" + dmgForLog + "). HP: " + target.getHp());
-            } else {
-                logger.log(() -> target.getName() + " SUCCEEDS on " + definition.saveAbility() +
-                        " save [" + totalSave + " vs DC " + definition.saveDc() + "] and takes NO damage.");
-            }
-        } else {
-            logger.log(() -> target.getName() + " FAILS " + definition.saveAbility() +
-                    " save [" + totalSave + " vs DC " + definition.saveDc() +
-                    "] and takes full damage (" + dmgForLog + "). HP: " + target.getHp());
-        }
-    }
+        logger.log(() -> {
+            String outcome = context.isSuccess() ? "SUCCEEDS on " : "FAILS ";
+            String rollInfo = context.isAutoFail() ? "[AUTO-FAIL]"
+                    : (context.isAutoSuccess() ? "[AUTO-SUCCESS]"
+                    : "[" + context.getTotalRoll() + " vs DC " + definition.saveDc() + "]");
+            String dmgInfo = context.getBaseDamages().isEmpty() ? ""
+                    : " and takes " + context.getTotalDamageDealt() + " damage. HP: " + target.getHp();
+            return target.getName() + " " + outcome + definition.saveAbility() + " save " + rollInfo + dmgInfo;
+        });
 
-    private boolean isEnemyInMeleeReach(Combatant attacker, GameState state) {
-        if (state == null) return false;
-        for (Combatant other : state.getAllCombatants()) {
-            if (other.getHp() > 0 && !other.getFactionId().equals(attacker.getFactionId())) {
-                for (Vector2d enemyTile : other.getOccupiedTiles()) {
-                    if (state.getGeometry().isInRange(attacker.getPosition(), attacker.getSize(), enemyTile, 1)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        // TODO - afterSave Hooks
+
     }
 }

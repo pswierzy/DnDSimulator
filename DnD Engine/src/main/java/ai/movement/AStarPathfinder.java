@@ -52,7 +52,7 @@ public class AStarPathfinder implements IPathfinder {
         Set<Vector2d> closedSet = new HashSet<>();
         Map<Vector2d, Node> allNodes = new HashMap<>();
 
-        Node startNode = new Node(startPos, null, 0, metric.measureDistance(startPos, destination), 0);
+        Node startNode = new Node(startPos, null, 0, metric.measureDistance(startPos, destination),  0);
         openSet.add(startNode);
         allNodes.put(startPos, startNode);
 
@@ -122,7 +122,7 @@ public class AStarPathfinder implements IPathfinder {
 
                 for (Combatant other : state.getAllCombatants()) {
                     if (other == entity || other.getHp() <= 0) continue;
-                    if (other.getOccupiedTiles().contains(checkPos)) return false;
+                    if (other.occupiesTile(checkPos)) return false;
                 }
             }
         }

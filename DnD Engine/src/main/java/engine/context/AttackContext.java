@@ -1,6 +1,7 @@
 package engine.context;
 
 import engine.actions.AttackDefinition;
+import engine.core.dice.advantage.AdvantageState;
 import engine.state.Combatant;
 import engine.state.DamageComponent;
 import engine.state.GameState;
@@ -17,6 +18,7 @@ public class AttackContext {
 
     private int advantageCount = 0;
     private int disadvantageCount = 0;
+    private AdvantageState advantageState = AdvantageState.STRAIGHT;
     private int bonusToHit;
 
     private int naturalRoll;
@@ -41,6 +43,7 @@ public class AttackContext {
 
     public void addAdvantage() { this.advantageCount++; }
     public void addDisadvantage() { this.disadvantageCount++; }
+    public void setAdvantageState(AdvantageState advantageState) { this.advantageState = advantageState; }
     public void addBonusToHit(int bonus) { this.bonusToHit += bonus; }
     public void addDamageComponent(DamageComponent component) { this.damageComponents.add(component); }
 
@@ -51,6 +54,7 @@ public class AttackContext {
 
     public int getAdvantageCount() { return advantageCount; }
     public int getDisadvantageCount() { return disadvantageCount; }
+    public AdvantageState getAdvantageState() { return advantageState; }
     public int getBonusToHit() { return bonusToHit; }
 
     public int getNaturalRoll() { return naturalRoll; }

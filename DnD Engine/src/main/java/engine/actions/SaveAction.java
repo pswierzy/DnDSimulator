@@ -1,7 +1,7 @@
 package engine.actions;
 
+import engine.context.SaveContext;
 import engine.context.TurnContext;
-import engine.core.metric.GridGeometry;
 import engine.state.Combatant;
 import engine.state.RolledDamage;
 import engine.state.Vector2d;
@@ -69,13 +69,14 @@ public class SaveAction implements IAction {
 
         turnContext.getCombatLogger().log(() ->
                 performer.getName() + " casts " + definition.name() + " centered at " + targetTile +
-                        " affecting " + affectedTargets.size() + " creature(s)!"
+                        " affecting " + affectedTargets.size() + " creature(s)! Trying to deal " + damageString + " damage."
         );
 
         for (Combatant target : affectedTargets) {
-            turnContext.getCombatResolver().resolveSavingThrow(
-                    performer, target, definition, baseDamage, turnContext.getCombatLogger()
+            SaveContext context = new SaveContext(
+                    performer, target, definition, baseDamage, turnContext.getGameState()
             );
+            turnContext.getCombatResolver().resolveSavingThrow(context, turnContext.getCombatLogger());
         }
     }
 }

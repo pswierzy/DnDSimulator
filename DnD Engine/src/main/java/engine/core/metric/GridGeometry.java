@@ -2,6 +2,7 @@ package engine.core.metric;
 
 import engine.actions.AreaOfEffect;
 import engine.actions.AreaShape;
+import engine.state.Combatant;
 import engine.state.Vector2d;
 
 import java.util.ArrayList;
@@ -22,15 +23,17 @@ public final class GridGeometry {
     }
 
     public boolean isInRange(Vector2d originPos, int originSize, Vector2d targetTile, int range) {
-        for (int dx = 0; dx < originSize; dx++) {
-            for (int dy = 0; dy < originSize; dy++) {
-                Vector2d occupiedTile = new Vector2d(originPos.x() + dx, originPos.y() + dy);
-                if (metric.measureDistance(occupiedTile, targetTile) <= range) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        int closestX = Math.clamp(targetTile.x(), originPos.x(), originPos.x() + originSize - 1);
+        int closestY = Math.clamp(targetTile.y(), originPos.y(), originPos.y() + originSize - 1);
+        return metric.measureDistance(new Vector2d(closestX, closestY), targetTile) <= range;
+    }
+
+    public boolean areWithinRange(Vector2d posA, int sizeA, Vector2d posB, int sizeB, int range) {
+        int xA = Math.clamp(posB.x(), posA.x(), posA.x() + sizeA - 1);
+        int yA = Math.clamp(posB.y(), posA.y(), posA.y() + sizeA - 1);
+        int xB = Math.clamp(xA, posB.x(), posB.x() + sizeB - 1);
+        int yB = Math.clamp(yA, posB.y(), posB.y() + sizeB - 1);
+        return metric.measureDistance(new Vector2d(xA, yA), new Vector2d(xB, yB)) <= range;
     }
 
     public List<Vector2d> calculateAoE(AreaOfEffect aoe, Vector2d origin, Vector2d target, int originSize) {
