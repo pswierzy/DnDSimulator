@@ -1,5 +1,6 @@
 package engine.actions;
 
+import engine.context.AttackContext;
 import engine.context.TurnContext;
 import engine.state.Combatant;
 import engine.state.Vector2d;
@@ -17,7 +18,8 @@ public class AttackAction implements IAction {
 
     @Override
     public boolean canExecute(TurnContext turnContext) {
-        if (attacker.getHp() <= 0 || !isInRange()) {
+        if (attacker.getHp() <= 0 || !turnContext.getGameState().getGeometry()
+                .isInRange(attacker.getPosition(), attacker.getSize(), targetTile, definition.range())) {
             return false;
         }
         Combatant target = turnContext.getGameState().getAliveCombatantAt(targetTile);
@@ -42,17 +44,12 @@ public class AttackAction implements IAction {
             case REACTION -> attacker.useReaction();
         }
 
-        turnContext.getCombatResolver().resolveAttack(
-                attacker, target, definition, turnContext.getCombatLogger()
+        AttackContext attackContext = new AttackContext(
+                attacker, target, definition, turnContext.getGameState()
         );
-    }
 
-    private boolean isInRange() {
-        for (Vector2d attackerTile : attacker.getOccupiedTiles()) {
-            if (attackerTile.distance(targetTile) <= definition.range()) {
-                return true;
-            }
-        }
-        return false;
+        turnContext.getCombatResolver().resolveAttack(
+                attackContext, turnContext.getCombatLogger()
+        );
     }
 }

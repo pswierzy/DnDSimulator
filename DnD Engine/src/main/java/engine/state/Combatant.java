@@ -91,27 +91,20 @@ public class Combatant {
         return hasReaction;
     }
     public int getAbilityModifier(Ability ability) {
-        return abilityModifiers.get(ability);
+        return abilityModifiers.getOrDefault(ability, 0);
     }
     public int getSaveBonus(Ability ability) {
-        return saveBonuses.get(ability);
+        return saveBonuses.getOrDefault(ability, 0);
     }
 
     public List<Vector2d> getOccupiedTiles() {
         List<Vector2d> tiles = new ArrayList<>();
         for (int dx = 0; dx < size; dx++) {
             for (int dy = 0; dy < size; dy++) {
-                tiles.add(new Vector2d(position.getX() + dx, position.getY() + dy));
+                tiles.add(new Vector2d(position.x() + dx, position.y() + dy));
             }
         }
         return tiles;
-    }
-
-    public IActionDefinition getPrimaryAction() {
-        if (availableActions == null || availableActions.isEmpty()) {
-        return new AttackDefinition("Fists", ActionCost.ACTION, AttackType.MELEE, 1, 2, List.of(new DamageComponent("1", DamageType.BLUDGEONING)));
-        }
-        return availableActions.get(0);
     }
 
     public void setId(String id) {

@@ -3,7 +3,7 @@ package ai.decider;
 import ai.movement.IPathfinder;
 import engine.actions.*;
 import engine.context.TurnContext;
-import engine.core.GridGeometry;
+import engine.core.metric.GridGeometry;
 import engine.state.Combatant;
 import engine.state.GameState;
 import engine.state.Vector2d;
@@ -38,7 +38,7 @@ public class AggressiveDecider implements IDecider {
 
         // PHASE 1: Looking for the best action THIS TURN
         List<IActionDefinition> usableDefinitions = getAvailableActionDefinitions(combatant, turnContext);
-        List<ActionCandidate> currentTurnCandidates = generateCandidates(combatant, enemies, usableDefinitions, state);
+        List<ActionCandidate> currentTurnCandidates = generateCandidates(combatant, enemies, usableDefinitions, state, turnContext);
 
         if (!currentTurnCandidates.isEmpty()) {
             currentTurnCandidates.sort(
@@ -71,7 +71,7 @@ public class AggressiveDecider implements IDecider {
         if (turnContext.getMovementRemaining() > 0) {
             // all actions available - TODO - thinking about which will be available next turn
             List<IActionDefinition> allDefinitions = combatant.getAvailableActions();
-            List<ActionCandidate> futureCandidates = generateCandidates(combatant, enemies, allDefinitions, state);
+            List<ActionCandidate> futureCandidates = generateCandidates(combatant, enemies, allDefinitions, state, turnContext);
 
             if (!futureCandidates.isEmpty()) {
                 futureCandidates.sort(
@@ -90,23 +90,25 @@ public class AggressiveDecider implements IDecider {
     }
 
     private List<ActionCandidate> generateCandidates(Combatant combatant, List<Combatant> enemies,
-                                                     List<IActionDefinition> definitions, GameState state) {
+                                                     List<IActionDefinition> definitions, GameState state, TurnContext turnContext) {
         List<ActionCandidate> candidates = new ArrayList<>();
 
         for (IActionDefinition actionDef : definitions) {
             List<Vector2d> potentialTargets = getPotentialTargetTiles(combatant, enemies, actionDef, state);
 
             for (Vector2d targetTile : potentialTargets) {
-                boolean inRangeNow = isTileInRange(combatant.getPosition(), combatant.getSize(), targetTile, actionDef.range());
+                boolean inRangeNow = state.getGeometry().isInRange(combatant.getPosition(), combatant.getSize(), targetTile, actionDef.range());
                 List<Vector2d> path = List.of();
                 int moveCost = 0;
                 Vector2d attackFromPos = combatant.getPosition();
 
                 if (!inRangeNow) {
-                    path = calculatePathToTargetTile(combatant, targetTile, actionDef, state);
+                    path = calculatePathToTargetTile(combatant, targetTile, actionDef, state, turnContext);
                     if (!path.isEmpty()) {
-                        moveCost = calculatePathCostInSquares(combatant.getPosition(), path);
-                        attackFromPos = path.get(path.size() - 1);
+                        moveCost = state.getGeometry().getMetric().calculatePathCost(
+                                combatant.getPosition(), path, turnContext.getDiagonalsTraversed()
+                        );
+                        attackFromPos = path.getLast();
                     }
                 }
 
@@ -139,7 +141,7 @@ public class AggressiveDecider implements IDecider {
                 for (Vector2d enemyTile : e.getOccupiedTiles()) {
                     for (int dx = -r; dx <= r; dx++) {
                         for (int dy = -r; dy <= r; dy++) {
-                            Vector2d t = new Vector2d(enemyTile.getX() + dx, enemyTile.getY() + dy);
+                            Vector2d t = new Vector2d(enemyTile.x() + dx, enemyTile.y() + dy);
                             if (state.getBattleMap().isWithinBounds(t) && !tiles.contains(t)) {
                                 tiles.add(t);
                             }
@@ -161,7 +163,7 @@ public class AggressiveDecider implements IDecider {
         }
 
         // Not AoE => expected damage
-        if (action.aoe().length() == 0) {
+        if (action.aoe() == null || action.aoe().length() == 0) {
             Combatant target = state.getAliveCombatantAt(targetTile);
             if (target == null || target.getFactionId().equals(attacker.getFactionId())) {
                 return -1.0;
@@ -173,7 +175,7 @@ public class AggressiveDecider implements IDecider {
         double totalScore = 0.0;
         int enemiesHit = 0;
 
-        List<Vector2d> affectedTiles = GridGeometry.calculateAoE(
+        List<Vector2d> affectedTiles = state.getGeometry().calculateAoE(
                 action.aoe(), castFromPos, targetTile, attacker.getSize()
         );
         List<Combatant> hitCombatants = new ArrayList<>();
@@ -202,35 +204,25 @@ public class AggressiveDecider implements IDecider {
         return enemiesHit > 0 ? totalScore : -1.0;
     }
 
-    private boolean isTileInRange(Vector2d attackerPos, int attackerSize, Vector2d targetTile, int range) {
-        for (int dx = 0; dx < attackerSize; dx++) {
-            for (int dy = 0; dy < attackerSize; dy++) {
-                Vector2d attackerTile = new Vector2d(attackerPos.getX() + dx, attackerPos.getY() + dy);
-                if (attackerTile.distance(targetTile) <= range) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private List<Vector2d> calculatePathToTargetTile(Combatant attacker, Vector2d targetTile,
-                                                     IActionDefinition action, GameState state) {
+                                                     IActionDefinition action, GameState state, TurnContext turnContext) {
         List<Vector2d> bestPath = new ArrayList<>();
         int minCost = Integer.MAX_VALUE;
         int range = action.range();
 
         for (int dx = -range; dx <= range; dx++) {
             for (int dy = -range; dy <= range; dy++) {
-                Vector2d checkPos = new Vector2d(targetTile.getX() + dx, targetTile.getY() + dy);
+                Vector2d checkPos = new Vector2d(targetTile.x() + dx, targetTile.y() + dy);
 
                 if (!state.getBattleMap().isWithinBounds(checkPos)) continue;
-                if (!isTileInRange(checkPos, attacker.getSize(), targetTile, range)) continue;
+                if (!state.getGeometry().isInRange(checkPos, attacker.getSize(), targetTile, range)) continue;
                 if (!pathfinder.isWalkable(attacker, checkPos, state)) continue;
 
                 List<Vector2d> path = pathfinder.findPath(attacker, checkPos, state);
                 if (!path.isEmpty()) {
-                    int cost = calculatePathCostInSquares(attacker.getPosition(), path);
+                    int cost = state.getGeometry().getMetric().calculatePathCost(
+                            attacker.getPosition(), path, turnContext.getDiagonalsTraversed()
+                    );
                     if (action.hasCloseCombatDisadvantage() && isEnemyInMeleeReach(attacker, checkPos, state)) {
                         cost += 100;
                     }
@@ -260,7 +252,7 @@ public class AggressiveDecider implements IDecider {
         for (Combatant other : state.getAllCombatants()) {
             if (other.getHp() > 0 && !other.getFactionId().equals(attacker.getFactionId())) {
                 for (Vector2d enemyTile : other.getOccupiedTiles()) {
-                    if (isTileInRange(attackerPos, attacker.getSize(), enemyTile, 1)) {
+                    if (state.getGeometry().isInRange(attackerPos, attacker.getSize(), enemyTile, 1)) {
                         return true;
                     }
                 }
@@ -277,23 +269,5 @@ public class AggressiveDecider implements IDecider {
             }
         }
         return enemies;
-    }
-
-    private int calculatePathCostInSquares(Vector2d startPos, List<Vector2d> path) {
-        int cost = 0;
-        int diagonals = 0;
-        Vector2d current = startPos;
-        for (Vector2d step : path) {
-            int dx = Math.abs(step.getX() - current.getX());
-            int dy = Math.abs(step.getY() - current.getY());
-            if (dx == 1 && dy == 1) {
-                diagonals++;
-                cost += (diagonals % 2 == 0) ? 2 : 1;
-            } else {
-                cost += 1;
-            }
-            current = step;
-        }
-        return cost;
     }
 }

@@ -1,5 +1,6 @@
 package ai.movement;
 
+import engine.core.metric.IGridMetric;
 import engine.state.Combatant;
 import engine.state.GameState;
 import engine.state.MovementTrait;
@@ -14,12 +15,14 @@ public class AStarPathfinder implements IPathfinder {
         final Node parent;
         final int gCost;
         final int hCost;
+        final int diagonals;
 
-        public Node(Vector2d position, Node parent, int gCost, int hCost) {
+        public Node(Vector2d position, Node parent, int gCost, int hCost, int diagonals) {
             this.position = position;
             this.parent = parent;
             this.gCost = gCost;
             this.hCost = hCost;
+            this.diagonals = diagonals;
         }
 
         public int getFCost() {
@@ -39,16 +42,17 @@ public class AStarPathfinder implements IPathfinder {
     @Override
     public List<Vector2d> findPath(Combatant entity, Vector2d destination, GameState state) {
         Vector2d startPos = entity.getPosition();
-
         if (startPos.equals(destination)) {
             return new ArrayList<>();
         }
+
+        IGridMetric metric = state.getGeometry().getMetric();
 
         PriorityQueue<Node> openSet = new PriorityQueue<>();
         Set<Vector2d> closedSet = new HashSet<>();
         Map<Vector2d, Node> allNodes = new HashMap<>();
 
-        Node startNode = new Node(startPos, null, 0, startPos.distance(destination) * 10);
+        Node startNode = new Node(startPos, null, 0, metric.measureDistance(startPos, destination), 0);
         openSet.add(startNode);
         allNodes.put(startPos, startNode);
 
@@ -66,25 +70,22 @@ public class AStarPathfinder implements IPathfinder {
             }
 
             for (int[] dir : directions) {
-                Vector2d neighborPos = new Vector2d(curr.position.getX() + dir[0], curr.position.getY() + dir[1]);
-
+                Vector2d neighborPos = new Vector2d(curr.position.x() + dir[0], curr.position.y() + dir[1]);
                 if (closedSet.contains(neighborPos)) continue;
-
                 if (!isWalkable(entity, neighborPos, state)) continue;
 
-                int moveCost = (Math.abs(dir[0]) + Math.abs(dir[1]) == 2 ? 15 : 10);
-                int gCost = curr.gCost + moveCost;
+                int stepCost = metric.calculateStepCost(curr.position, neighborPos, curr.diagonals);
+                int nextDiagonals = curr.diagonals + (metric.isDiagonalStep(curr.position, neighborPos) ? 1 : 0);
+                int gCost = curr.gCost + stepCost;
 
                 Node neighborNode = allNodes.get(neighborPos);
-
                 if (neighborNode == null || gCost < neighborNode.gCost) {
-                    int hCost = neighborPos.distance(destination) * 10;
-                    Node nextNode = new Node(neighborPos, curr, gCost, hCost);
+                    int hCost = metric.measureDistance(neighborPos, destination);
+                    Node nextNode = new Node(neighborPos, curr, gCost, hCost, nextDiagonals);
 
                     if (neighborNode != null) {
                         openSet.remove(neighborNode);
                     }
-
                     openSet.add(nextNode);
                     allNodes.put(neighborPos, nextNode);
                 }
@@ -109,7 +110,7 @@ public class AStarPathfinder implements IPathfinder {
     public boolean isWalkable(Combatant entity, Vector2d place, GameState state) {
         for (int dx = 0; dx < entity.getSize(); dx++) {
             for (int dy = 0; dy < entity.getSize(); dy++) {
-                Vector2d checkPos = new Vector2d(place.getX() + dx, place.getY() + dy);
+                Vector2d checkPos = new Vector2d(place.x() + dx, place.y() + dy);
 
                 if (!state.getBattleMap().isWithinBounds(checkPos)) return false;
                 if (!entity.hasTrait(MovementTrait.INCORPOREAL)) {

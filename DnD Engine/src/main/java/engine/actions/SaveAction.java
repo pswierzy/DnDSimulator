@@ -1,7 +1,7 @@
 package engine.actions;
 
 import engine.context.TurnContext;
-import engine.core.GridGeometry;
+import engine.core.metric.GridGeometry;
 import engine.state.Combatant;
 import engine.state.RolledDamage;
 import engine.state.Vector2d;
@@ -22,7 +22,8 @@ public class SaveAction implements IAction {
 
     @Override
     public boolean canExecute(TurnContext turnContext) {
-        if (performer.getHp() <= 0 || !isTileInRange()) return false;
+        if (performer.getHp() <= 0 || !turnContext.getGameState().getGeometry()
+                .isInRange(performer.getPosition(), performer.getSize(), targetTile, definition.range())) return false;
         if (!turnContext.getGameState().getBattleMap().isWithinBounds(targetTile)) return false;
 
         if (definition.aoe() == null || definition.aoe().shape() == AreaShape.SINGLE_TARGET) {
@@ -46,7 +47,7 @@ public class SaveAction implements IAction {
             case REACTION -> performer.useReaction();
         }
 
-        List<Vector2d> affectedTiles = GridGeometry.calculateAoE(
+        List<Vector2d> affectedTiles = turnContext.getGameState().getGeometry().calculateAoE(
                 definition.aoe(), performer.getPosition(), targetTile, performer.getSize()
         );
 
@@ -76,14 +77,5 @@ public class SaveAction implements IAction {
                     performer, target, definition, baseDamage, turnContext.getCombatLogger()
             );
         }
-    }
-
-    private boolean isTileInRange() {
-        for (Vector2d performerTile : performer.getOccupiedTiles()) {
-            if (performerTile.distance(targetTile) <= definition.range()) {
-                return true;
-            }
-        }
-        return false;
     }
 }

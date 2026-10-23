@@ -1,5 +1,7 @@
 package engine.state;
 
+import engine.core.metric.GridGeometry;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,12 +12,16 @@ public class GameState {
     private BattleMap battleMap;
 
     private Queue<Combatant> currentInitiative = new LinkedList<>();
-    private int currRound = 0;
+    private int currRound = 1;
 
     public GameState(List<Combatant> initiative, BattleMap battleMap) {
         this.initiativeList = initiative;
         currentInitiative.addAll(initiativeList);
         this.battleMap = battleMap;
+    }
+
+    public GridGeometry getGeometry() {
+        return battleMap.getGeometry();
     }
 
     public Combatant getNextCombatant() {
@@ -44,7 +50,7 @@ public class GameState {
         for (Combatant c : initiativeList) {
             if (c.getHp() <= 0) continue;
             for (Vector2d occupied : c.getOccupiedTiles()) {
-                if (centre.distance(occupied) <= radius) {
+                if (this.getGeometry().getMetric().measureDistance(centre, occupied) <= radius) {
                     result.add(c);
                     break;
                 }

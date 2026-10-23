@@ -12,6 +12,7 @@ public class TurnContext {
     private boolean actionUsed = false;
     private boolean bonusActionUsed = false;
     private int movementRemaining;
+    private int diagonalsTraversed = 0;
 
     public TurnContext(GameState gameState, ICombatLogger combatLogger, AttackResolver attackResolver, int initialMovement) {
         this.gameState = gameState;
@@ -29,13 +30,10 @@ public class TurnContext {
     public int getMovementRemaining() { return movementRemaining; }
     public void consumeMovement(int cost) { this.movementRemaining -= cost; }
 
-    public GameState getGameState() {
-        return gameState;
-    }
-    public ICombatLogger getCombatLogger() {
-        return combatLogger;
-    }
-    public AttackResolver getCombatResolver() {
-        return attackResolver;
-    }
+    public GameState getGameState() { return gameState; }
+    public ICombatLogger getCombatLogger() { return combatLogger; }
+    public AttackResolver getCombatResolver() { return attackResolver; }
+
+    public int getDiagonalsTraversed() { return diagonalsTraversed; }
+    public void incrementDiagonalsTraversed() { this.diagonalsTraversed++; }
 }

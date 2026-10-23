@@ -1,10 +1,11 @@
 package engine.actions;
 
 public enum AreaShape {
-    SINGLE_TARGET,  // range
-    SPHERE,         // range,radius
-    CUBE,           // size
-    CONE,           // range
-    LINE,           // range
-    EMANATION,      // radius
+    SINGLE_TARGET,
+    SPHERE,
+    CUBE_SELF,
+    CUBE_RANGED,
+    CONE,
+    LINE,
+    EMANATION,
 }

@@ -1,6 +1,7 @@
 package engine.actions;
 
 import engine.context.TurnContext;
+import engine.core.metric.IGridMetric;
 import engine.events.SimpleEvent;
 import engine.state.Combatant;
 import engine.state.Vector2d;
@@ -25,36 +26,29 @@ public class MoveAction implements IAction {
     @Override
     public void execute(TurnContext turnContext) {
         int currentCost = 0;
-        int diagonalsTraversed = 0;
 
         Vector2d startPos = entity.getPosition();
         Vector2d currentPos = startPos;
 
         List<Vector2d> stepsTaken = new ArrayList<>();
 
+        IGridMetric metric = turnContext.getGameState().getGeometry().getMetric();
         for (Vector2d step : path) {
-            int dx = Math.abs(step.getX() - currentPos.getX());
-            int dy = Math.abs(step.getY() - currentPos.getY());
-
-            int stepCost;
-            if (dx == 1 && dy == 1) {
-                diagonalsTraversed++;
-                stepCost = (diagonalsTraversed % 2 == 0) ? 2 : 1;
-            } else {
-                stepCost = 1;
-            }
+            int stepCost = metric.calculateStepCost(currentPos, step, turnContext.getDiagonalsTraversed());
 
             if (stepCost > turnContext.getMovementRemaining()) {
                 break;
             }
 
-            entity.setPosition(step);
+            if (metric.isDiagonalStep(currentPos, step)) {
+                turnContext.incrementDiagonalsTraversed();
+            }
             turnContext.consumeMovement(stepCost);
+            entity.setPosition(step);
+
             currentCost += stepCost;
             currentPos = step;
             stepsTaken.add(step);
-
-            // TODO - opportunity attacks
         }
 
         if (!currentPos.equals(startPos)) {
